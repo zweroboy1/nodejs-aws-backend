@@ -4,6 +4,7 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   transform: {
     '^.+\\.tsx?$': 'ts-jest'
-  },
-  setupFilesAfterEnv: ['aws-cdk-lib/testhelpers/jest-autoclean'],
+  },  moduleNameMapper: {
+    '^(\.{1,2}/.*)\.js$': '$1',
+  },  setupFilesAfterEnv: ['aws-cdk-lib/testhelpers/jest-autoclean'],
 };

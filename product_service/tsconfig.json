@@ -24,7 +24,8 @@
     "typeRoots": [
       "./node_modules/@types"
     ],
-    "types": ["node"]
+    "types": ["node", "jest"],
+    "isolatedModules": true
   },
   "exclude": [
     "node_modules",
