@@ -14,92 +14,102 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         "Access-Control-Allow-Origin": "*",
     };
 
-    let body: unknown;
     try {
-        body = JSON.parse(event.body ?? "");
-    } catch {
-        return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ message: "Invalid JSON body" }),
-        };
-    }
+        let body: unknown;
+        try {
+            body = JSON.parse(event.body ?? "");
+        } catch {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ message: "Invalid JSON body" }),
+            };
+        }
 
-    const ALLOWED_KEYS = new Set(["title", "description", "price", "count"]);
-    const REQUIRED_KEYS = ["title", "price", "count"];
+        if (body === null || typeof body !== "object" || Array.isArray(body)) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ message: "Request body must be a JSON object" }),
+            };
+        }
 
-    const data = body as Record<string, unknown>;
+        const ALLOWED_KEYS = new Set(["title", "description", "price", "count"]);
+        const REQUIRED_KEYS = ["title", "price", "count"];
 
-    const unknownKeys = Object.keys(data).filter((k) => !ALLOWED_KEYS.has(k));
-    if (unknownKeys.length > 0) {
-        return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ message: `Unknown fields: ${unknownKeys.join(", ")}` }),
-        };
-    }
+        const data = body as Record<string, unknown>;
 
-    const missingKeys = REQUIRED_KEYS.filter((k) => !(k in data));
-    if (missingKeys.length > 0) {
-        return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ message: `Missing required fields: ${missingKeys.join(", ")}` }),
-        };
-    }
+        const unknownKeys = Object.keys(data).filter((k) => !ALLOWED_KEYS.has(k));
+        if (unknownKeys.length > 0) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ message: `Unknown fields: ${unknownKeys.join(", ")}` }),
+            };
+        }
 
-    const { title, description, price, count } = data;
+        const missingKeys = REQUIRED_KEYS.filter((k) => !(k in data));
+        if (missingKeys.length > 0) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ message: `Missing required fields: ${missingKeys.join(", ")}` }),
+            };
+        }
 
-    if (typeof title !== "string" || title.trim() === "") {
-        return { statusCode: 400, headers, body: JSON.stringify({ message: "title must be a non-empty string" }) };
-    }
-    if (typeof price !== "number" || !Number.isFinite(price) || price < 0) {
-        return { statusCode: 400, headers, body: JSON.stringify({ message: "price must be a non-negative number" }) };
-    }
-    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) {
-        return { statusCode: 400, headers, body: JSON.stringify({ message: "count must be a non-negative integer" }) };
-    }
-    if (description !== undefined && (typeof description !== "string" || description.trim() === "")) {
-        return { statusCode: 400, headers, body: JSON.stringify({ message: "description must be a non-empty string if provided" }) };
-    }
+        const { title, description, price, count } = data;
 
-    const productsTable = process.env.PRODUCTS_TABLE!;
-    const stocksTable = process.env.STOCKS_TABLE!;
-    const id = randomUUID();
+        if (typeof title !== "string" || title.trim() === "") {
+            return { statusCode: 400, headers, body: JSON.stringify({ message: "title must be a non-empty string" }) };
+        }
+        if (typeof price !== "number" || !Number.isFinite(price) || price < 0) {
+            return { statusCode: 400, headers, body: JSON.stringify({ message: "price must be a non-negative number" }) };
+        }
+        if (typeof count !== "number" || !Number.isInteger(count) || count < 0) {
+            return { statusCode: 400, headers, body: JSON.stringify({ message: "count must be a non-negative integer" }) };
+        }
+        if (description !== undefined && (typeof description !== "string" || description.trim() === "")) {
+            return { statusCode: 400, headers, body: JSON.stringify({ message: "description must be a non-empty string if provided" }) };
+        }
 
-    try {
-    await docClient.send(
-        new TransactWriteCommand({
-            TransactItems: [
-                {
-                    Put: {
-                        TableName: productsTable,
-                        Item: {
-                            id,
-                            title: title.trim(),
-                            description: description === undefined ? "" : description.trim(),
-                            price,
+        const productsTable = process.env.PRODUCTS_TABLE!;
+        const stocksTable = process.env.STOCKS_TABLE!;
+        const id = randomUUID();
+        const titleTrimmed = title.trim();
+        const descriptionTrimmed = description === undefined ? "" : description.trim();
+
+        await docClient.send(
+            new TransactWriteCommand({
+                TransactItems: [
+                    {
+                        Put: {
+                            TableName: productsTable,
+                            Item: {
+                                id,
+                                title: titleTrimmed,
+                                description: descriptionTrimmed,
+                                price,
+                            },
                         },
                     },
-                },
-                {
-                    Put: {
-                        TableName: stocksTable,
-                        Item: {
-                            product_id: id,
-                            count,
+                    {
+                        Put: {
+                            TableName: stocksTable,
+                            Item: {
+                                product_id: id,
+                                count,
+                            },
                         },
                     },
-                },
-            ],
-        }),
-    );
+                ],
+            }),
+        );
 
-    return {
-        statusCode: 201,
-        headers,
-        body: JSON.stringify({ id, title: title.trim(), description: description === undefined ? "" : description.trim(), price, count }),
-    };
+        return {
+            statusCode: 201,
+            headers,
+            body: JSON.stringify({ id, title: titleTrimmed, description: descriptionTrimmed, price, count }),
+        };
     } catch (error) {
         console.error("createProduct error:", error);
         return {
