@@ -1,0 +1,146 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Product Service API",
+    "description": "API for managing products in the electronics shop",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://4yp23fppjg.execute-api.eu-central-1.amazonaws.com/prod",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "summary": "Get all products",
+        "description": "Returns a list of all available products",
+        "operationId": "getProductsList",
+        "responses": {
+          "200": {
+            "description": "Successful response with list of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "a3f1e2d4-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+                    "title": "Apple MacBook Pro 14",
+                    "description": "14-inch MacBook Pro with M3 Pro chip, 18GB RAM, 512GB SSD.",
+                    "price": 1999,
+                    "count": 5
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{productId}": {
+      "get": {
+        "summary": "Get product by ID",
+        "description": "Returns a single product by its ID",
+        "operationId": "getProductsById",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "UUID of the product",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "a3f1e2d4-1a2b-4c3d-8e4f-5a6b7c8d9e0f"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with product data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                },
+                "example": {
+                  "id": "a3f1e2d4-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+                  "title": "Apple MacBook Pro 14",
+                  "description": "14-inch MacBook Pro with M3 Pro chip, 18GB RAM, 512GB SSD.",
+                  "price": 1999,
+                  "count": 5
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Product not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "required": ["id", "title", "description", "price", "count"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique product identifier",
+            "example": "a3f1e2d4-1a2b-4c3d-8e4f-5a6b7c8d9e0f"
+          },
+          "title": {
+            "type": "string",
+            "description": "Product name",
+            "example": "Apple MacBook Pro 14"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description",
+            "example": "14-inch MacBook Pro with M3 Pro chip, 18GB RAM, 512GB SSD."
+          },
+          "price": {
+            "type": "number",
+            "description": "Product price in USD",
+            "example": 1999
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of items in stock",
+            "example": 5
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Product not found"
+          }
+        }
+      }
+    }
+  }
+}
