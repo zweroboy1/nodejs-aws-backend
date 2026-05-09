@@ -7,6 +7,8 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    console.log("createProduct invoked, body:", event.body);
+
     const headers = {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
@@ -65,6 +67,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const stocksTable = process.env.STOCKS_TABLE!;
     const id = randomUUID();
 
+    try {
     await docClient.send(
         new TransactWriteCommand({
             TransactItems: [
@@ -97,4 +100,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         headers,
         body: JSON.stringify({ id, title: title.trim(), description: description === undefined ? "" : description.trim(), price, count }),
     };
+    } catch (error) {
+        console.error("createProduct error:", error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ message: "Internal server error" }),
+        };
+    }
 };
