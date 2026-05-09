@@ -9,7 +9,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "cdk deploy",
+    "deploy": "cdk deploy --require-approval",
     "seed": "ts-node scripts/seed.ts"
   },
   "devDependencies": {
