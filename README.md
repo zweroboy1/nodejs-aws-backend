@@ -1,22 +1,23 @@
 # nodejs-aws-backend
 
-Backend for RSS AWS course. Built with AWS CDK, AWS Lambda, and API Gateway.
+Backend for RSS AWS course. Built with AWS CDK, AWS Lambda, DynamoDB and API Gateway.
 
 ## Structure
 
 ```
 nodejs-aws-backend/
-└── product_service/   # Product Service (Task 3)
+└── product_service/   # Product Service (Task 4)
 ```
 
 ## Product Service
 
-REST API with two endpoints:
+REST API with three endpoints:
 
 | Method | URL | Description |
 |--------|-----|-------------|
-| GET | `/products` | Returns list of all products |
+| GET | `/products` | Returns list of all products (joined with stocks) |
 | GET | `/products/{productId}` | Returns single product by ID |
+| POST | `/products` | Creates a new product |
 
 **Base URL:** `https://4yp23fppjg.execute-api.eu-central-1.amazonaws.com/prod`
 
@@ -26,13 +27,45 @@ REST API with two endpoints:
 **Frontend repo:** https://github.com/zweroboy1/nodejs-aws-shop-react  
 **Frontend deploy:** https://d3g4t1iwowafwv.cloudfront.net/
 
+### Product model
+
+```json
+{
+  "id": "uuid",
+  "title": "string",
+  "description": "string",
+  "price": 999,
+  "count": 3
+}
+```
+
+### POST /products — request body
+
+```json
+{
+  "title": "string (required)",
+  "description": "string (optional)",
+  "price": 999,
+  "count": 3
+}
+```
+
+Returns `400` on invalid data, `201` on success, `500` on server error.
+
 ### Deploy
 
 ```bash
 cd product_service
 npm install
 cdk bootstrap   # first time only
-cdk deploy
+npm run deploy
+```
+
+### Seed DynamoDB
+
+```bash
+cd product_service
+npm run seed
 ```
 
 ### Run tests
