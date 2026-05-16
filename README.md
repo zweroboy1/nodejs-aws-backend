@@ -6,7 +6,8 @@ Backend for RSS AWS course. Built with AWS CDK, AWS Lambda, DynamoDB and API Gat
 
 ```
 nodejs-aws-backend/
-└── product_service/   # Product Service (Task 4)
+├── product-service/   # Product Service (Task 4)
+└── import-service/    # Import Service (Task 5)
 ```
 
 ## Product Service
