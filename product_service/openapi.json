@@ -39,6 +39,90 @@
                 ]
               }
             }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new product",
+        "description": "Creates a new product and its stock entry atomically",
+        "operationId": "createProduct",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductRequest"
+              },
+              "example": {
+                "title": "Nvidia RTX 4080 Super",
+                "description": "High-end graphics card with 16GB GDDR6X, ray tracing and DLSS 3.5.",
+                "price": 999,
+                "count": 3
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                },
+                "example": {
+                  "id": "e3f1c2d4-1e2f-4091-b7e3-5e6f7a8b9c0d",
+                  "title": "Nvidia RTX 4080 Super",
+                  "description": "High-end graphics card with 16GB GDDR6X, ray tracing and DLSS 3.5.",
+                  "price": 999,
+                  "count": 3
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingFields": {
+                    "summary": "Missing required fields",
+                    "value": { "message": "Missing required fields: title, price" }
+                  },
+                  "invalidPrice": {
+                    "summary": "Invalid price",
+                    "value": { "message": "price must be a non-negative number" }
+                  },
+                  "unknownFields": {
+                    "summary": "Unknown fields",
+                    "value": { "message": "Unknown fields: id, createdAt" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -91,6 +175,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -98,6 +192,34 @@
   },
   "components": {
     "schemas": {
+      "CreateProductRequest": {
+        "type": "object",
+        "required": ["title", "price", "count"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Product name",
+            "example": "Nvidia RTX 4080 Super"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description (optional)",
+            "example": "High-end graphics card with 16GB GDDR6X, ray tracing and DLSS 3.5."
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Product price in USD",
+            "example": 999
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of items in stock",
+            "example": 3
+          }
+        }
+      },
       "Product": {
         "type": "object",
         "required": ["id", "title", "description", "price", "count"],
