@@ -1,16 +1,48 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as path from 'node:path';
+
+const IMPORT_BUCKET_NAME = process.env.IMPORT_BUCKET_NAME ?? 'import-service-zweroboy1';
 
 export class ImportServiceStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+    constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+        super(scope, id, props);
 
-    // The code that defines your stack goes here
+        const importBucket = s3.Bucket.fromBucketName(this, 'ImportBucket', IMPORT_BUCKET_NAME);
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'ImportServiceQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
-  }
+        const importProductsFile = new NodejsFunction(this, 'ImportProductsFile', {
+            runtime: lambda.Runtime.NODEJS_22_X,
+            entry: path.join(__dirname, '../lambda/importProductsFile.ts'),
+            handler: 'handler',
+            environment: {
+                IMPORT_BUCKET_NAME: importBucket.bucketName,
+            },
+        });
+
+        importBucket.grantPut(importProductsFile);
+
+        const api = new apigateway.RestApi(this, 'ImportServiceApi', {
+            restApiName: 'Import Service',
+            defaultCorsPreflightOptions: {
+                allowOrigins: apigateway.Cors.ALL_ORIGINS,
+                allowMethods: apigateway.Cors.ALL_METHODS,
+            },
+        });
+
+        const importResource = api.root.addResource('import');
+        importResource.addMethod('GET', new apigateway.LambdaIntegration(importProductsFile), {
+            requestParameters: {
+                'method.request.querystring.name': true,
+            },
+        });
+
+        new cdk.CfnOutput(this, 'ApiUrl', {
+            value: api.url,
+            description: 'Import Service API URL',
+        });
+    }
 }
