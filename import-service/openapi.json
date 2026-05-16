@@ -1,0 +1,96 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Import Service API",
+    "description": "API for importing products via CSV file upload to S3",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://39r1iqoj3f.execute-api.eu-central-1.amazonaws.com/prod",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/import": {
+      "get": {
+        "summary": "Get signed URL for CSV upload",
+        "description": "Returns a pre-signed S3 URL for uploading a CSV file to the `uploaded/` folder. After upload, the file is automatically parsed and moved to the `parsed/` folder.",
+        "operationId": "importProductsFile",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "Name of the CSV file to upload (must end with .csv)",
+            "schema": {
+              "type": "string",
+              "example": "products.csv"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pre-signed S3 URL for uploading the file via HTTP PUT",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "https://import-service-zweroboy1.s3.eu-central-1.amazonaws.com/uploaded/products.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=..."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request — missing or non-CSV filename",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingName": {
+                    "summary": "Missing name parameter",
+                    "value": { "message": "Query parameter 'name' is required" }
+                  },
+                  "notCsv": {
+                    "summary": "File is not a CSV",
+                    "value": { "message": "Only CSV files are allowed" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Query parameter 'name' is required"
+          }
+        }
+      }
+    }
+  }
+}
