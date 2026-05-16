@@ -4,6 +4,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as path from 'node:path';
 
 const IMPORT_BUCKET_NAME = process.env.IMPORT_BUCKET_NAME ?? 'import-service-zweroboy1';
@@ -24,6 +25,22 @@ export class ImportServiceStack extends cdk.Stack {
         });
 
         importBucket.grantPut(importProductsFile);
+
+        const importFileParser = new NodejsFunction(this, 'ImportFileParser', {
+            runtime: lambda.Runtime.NODEJS_22_X,
+            entry: path.join(__dirname, '../lambda/importFileParser.ts'),
+            handler: 'handler',
+            environment: {
+                IMPORT_BUCKET_NAME: importBucket.bucketName,
+            },
+        });
+
+        importBucket.grantRead(importFileParser);
+        importBucket.addEventNotification(
+            s3.EventType.OBJECT_CREATED,
+            new s3n.LambdaDestination(importFileParser),
+            { prefix: 'uploaded/' }
+        );
 
         const api = new apigateway.RestApi(this, 'ImportServiceApi', {
             restApiName: 'Import Service',
