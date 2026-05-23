@@ -1,10 +1,12 @@
 import { SQSEvent } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { randomUUID } from "node:crypto";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
+const snsClient = new SNSClient({});
 
 interface ProductInput {
     title: string;
@@ -30,6 +32,8 @@ export const handler = async (event: SQSEvent): Promise<void> => {
 
     const productsTable = process.env.PRODUCTS_TABLE!;
     const stocksTable = process.env.STOCKS_TABLE!;
+
+    const createdProducts: { id: string; title: string; description: string; price: number; count: number }[] = [];
 
     for (const record of event.Records) {
         console.log("Processing SQS message:", record.messageId);
@@ -65,30 +69,32 @@ export const handler = async (event: SQSEvent): Promise<void> => {
                         {
                             Put: {
                                 TableName: productsTable,
-                                Item: {
-                                    id,
-                                    title,
-                                    description,
-                                    price,
-                                },
+                                Item: { id, title, description, price },
                             },
                         },
                         {
                             Put: {
                                 TableName: stocksTable,
-                                Item: {
-                                    product_id: id,
-                                    count,
-                                },
+                                Item: { product_id: id, count },
                             },
                         },
                     ],
                 }),
             );
             console.log("Product created successfully:", id, title);
+            createdProducts.push({ id, title, description, price, count });
         } catch (error) {
             console.error("Failed to create product for message:", record.messageId, error);
             throw error;
         }
+    }
+
+    if (createdProducts.length > 0) {
+        await snsClient.send(new PublishCommand({
+            TopicArn: process.env.SNS_TOPIC_ARN!,
+            Subject: `${createdProducts.length} product(s) created`,
+            Message: JSON.stringify(createdProducts, null, 2),
+        }));
+        console.log("SNS notification sent for", createdProducts.length, "products");
     }
 };

@@ -5,6 +5,8 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as path from 'node:path';
 
@@ -45,6 +47,14 @@ export class ProductServiceStack extends cdk.Stack {
             },
         });
 
+        const createProductTopic = new sns.Topic(this, 'CreateProductTopic', {
+            topicName: 'createProductTopic',
+        });
+
+        createProductTopic.addSubscription(
+            new snsSubscriptions.EmailSubscription('kuhni.info@gmail.com'),
+        );
+
         const catalogItemsQueue = new sqs.Queue(this, 'CatalogItemsQueue', {
             queueName: 'catalogItemsQueue',
             visibilityTimeout: cdk.Duration.seconds(30),
@@ -58,15 +68,18 @@ export class ProductServiceStack extends cdk.Stack {
             environment: {
                 PRODUCTS_TABLE: productsTable.tableName,
                 STOCKS_TABLE: stocksTable.tableName,
+                SNS_TOPIC_ARN: createProductTopic.topicArn,
             },
         });
 
         catalogBatchProcess.addEventSource(new SqsEventSource(catalogItemsQueue, {
             batchSize: 5,
+            maxBatchingWindow: cdk.Duration.seconds(1),
         }));
 
         productsTable.grantWriteData(catalogBatchProcess);
         stocksTable.grantWriteData(catalogBatchProcess);
+        createProductTopic.grantPublish(catalogBatchProcess);
 
         productsTable.grantReadData(getProductsList);
         stocksTable.grantReadData(getProductsList);
@@ -89,11 +102,6 @@ export class ProductServiceStack extends cdk.Stack {
 
         const productById = products.addResource('{productId}');
         productById.addMethod('GET', new apigateway.LambdaIntegration(getProductsById));
-
-        new cdk.CfnOutput(this, 'ApiUrl', {
-            value: api.url,
-            description: 'Product Service API URL',
-        });
 
         new cdk.CfnOutput(this, 'CatalogItemsQueueArn', {
             value: catalogItemsQueue.queueArn,
