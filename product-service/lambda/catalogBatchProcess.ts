@@ -36,7 +36,13 @@ export const handler = async (event: SQSEvent): Promise<void> => {
 
         let body: unknown;
         try {
-            body = JSON.parse(record.body);
+            const parsed = JSON.parse(record.body);
+            if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+                const d = parsed as Record<string, unknown>;
+                if (typeof d.price === "string") d.price = Number(d.price);
+                if (typeof d.count === "string") d.count = Number(d.count);
+            }
+            body = parsed;
         } catch {
             console.error("Failed to parse SQS message body:", record.body);
             continue;
