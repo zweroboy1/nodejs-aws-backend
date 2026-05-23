@@ -6,7 +6,8 @@ Backend for RSS AWS course. Built with AWS CDK, AWS Lambda, DynamoDB and API Gat
 
 ```
 nodejs-aws-backend/
-└── product_service/   # Product Service (Task 4)
+├── product-service/   # Product Service (Task 4)
+└── import-service/    # Import Service (Task 5)
 ```
 
 ## Product Service
@@ -77,4 +78,54 @@ npm test
 
 ### API Documentation
 
-OpenAPI spec: `product_service/openapi.json` — can be rendered at [editor.swagger.io](https://editor.swagger.io)
+OpenAPI spec: `product-service/openapi.json` — can be rendered at [editor.swagger.io](https://editor.swagger.io)
+
+---
+
+## Import Service
+
+Handles CSV product imports via S3 pre-signed URLs.
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/import?name=products.csv` | Returns a pre-signed S3 URL for uploading a CSV file |
+
+**Base URL:** `https://39r1iqoj3f.execute-api.eu-central-1.amazonaws.com/prod`
+
+- Get signed URL: `https://39r1iqoj3f.execute-api.eu-central-1.amazonaws.com/prod/import?name=products.csv`
+
+### How it works
+
+1. Call `GET /import?name=<filename>.csv` — receive a pre-signed S3 URL
+2. Upload the CSV file via `PUT` to that URL (header `Content-Type: text/csv`)
+3. S3 automatically triggers the `importFileParser` lambda
+4. Lambda parses the CSV and logs each row to CloudWatch
+5. File is moved from `uploaded/` to `parsed/`
+
+### Query parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `name` | yes | Name of the CSV file (must end with `.csv`) |
+
+Returns `400` on missing/non-CSV name, `200` with plain-text signed URL on success, `500` on server error.
+
+### Deploy
+
+```bash
+cd import-service
+npm install
+cdk bootstrap   # first time only
+npm run deploy
+```
+
+### Run tests
+
+```bash
+cd import-service
+npm test
+```
+
+### API Documentation
+
+OpenAPI spec: `import-service/openapi.json` — can be rendered at [editor.swagger.io](https://editor.swagger.io)
