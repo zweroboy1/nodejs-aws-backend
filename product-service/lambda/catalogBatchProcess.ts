@@ -89,12 +89,19 @@ export const handler = async (event: SQSEvent): Promise<void> => {
         }
     }
 
-    if (createdProducts.length > 0) {
+    for (const product of createdProducts) {
+        const priceRange = product.price >= 50 ? 'expensive' : 'affordable';
         await snsClient.send(new PublishCommand({
             TopicArn: process.env.SNS_TOPIC_ARN!,
-            Subject: `${createdProducts.length} product(s) created`,
-            Message: JSON.stringify(createdProducts, null, 2),
+            Subject: `New product created: ${product.title}`,
+            Message: JSON.stringify(product),
+            MessageAttributes: {
+                priceRange: {
+                    DataType: 'String',
+                    StringValue: priceRange,
+                },
+            },
         }));
-        console.log("SNS notification sent for", createdProducts.length, "products");
+        console.log("SNS notification sent for product:", product.id, product.title, `(${priceRange})`);
     }
 };

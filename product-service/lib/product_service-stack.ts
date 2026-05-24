@@ -52,7 +52,23 @@ export class ProductServiceStack extends cdk.Stack {
         });
 
         createProductTopic.addSubscription(
-            new snsSubscriptions.EmailSubscription('kuhni.info@gmail.com'),
+            new snsSubscriptions.EmailSubscription('kuhni.info@gmail.com', {
+                filterPolicy: {
+                    priceRange: sns.SubscriptionFilter.stringFilter({
+                        allowlist: ['expensive'],
+                    }),
+                },
+            }),
+        );
+
+        createProductTopic.addSubscription(
+            new snsSubscriptions.EmailSubscription('oleksii_roman@epam.com', {
+                filterPolicy: {
+                    priceRange: sns.SubscriptionFilter.stringFilter({
+                        allowlist: ['affordable'],
+                    }),
+                },
+            }),
         );
 
         const catalogItemsQueue = new sqs.Queue(this, 'CatalogItemsQueue', {
@@ -74,7 +90,7 @@ export class ProductServiceStack extends cdk.Stack {
 
         catalogBatchProcess.addEventSource(new SqsEventSource(catalogItemsQueue, {
             batchSize: 5,
-            maxBatchingWindow: cdk.Duration.seconds(1),
+            maxBatchingWindow: cdk.Duration.seconds(5),
         }));
 
         productsTable.grantWriteData(catalogBatchProcess);
