@@ -26,7 +26,7 @@ REST API with three endpoints:
 - Product by ID: `https://4yp23fppjg.execute-api.eu-central-1.amazonaws.com/prod/products/{productId}`
 
 **Frontend repo:** https://github.com/zweroboy1/nodejs-aws-shop-react  
-**Frontend deploy:** https://d3g4t1iwowafwv.cloudfront.net/
+**Frontend deploy:** https://d2xbbmgdpkl47j.cloudfront.net/
 
 ### Product model
 
@@ -133,6 +133,8 @@ Handles CSV product imports via S3 pre-signed URLs. Parsed CSV rows are sent to 
 **Base URL:** `https://39r1iqoj3f.execute-api.eu-central-1.amazonaws.com/prod`
 
 - Get signed URL: `https://39r1iqoj3f.execute-api.eu-central-1.amazonaws.com/prod/import?name=products.csv`
+
+**Frontend:** https://d2xbbmgdpkl47j.cloudfront.net/admin/products
 
 ### CSV format
 
