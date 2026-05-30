@@ -6,8 +6,9 @@ Backend for RSS AWS course. Built with AWS CDK, AWS Lambda, DynamoDB, API Gatewa
 
 ```
 nodejs-aws-backend/
-├── product-service/   # Product Service (Tasks 4, 6)
-└── import-service/    # Import Service (Tasks 5, 6)
+├── product-service/        # Product Service (Tasks 4, 6)
+├── import-service/         # Import Service (Tasks 5, 6)
+└── authorization-service/  # Authorization Service (Task 7)
 ```
 
 ## Product Service
@@ -134,6 +135,8 @@ Handles CSV product imports via S3 pre-signed URLs. Parsed CSV rows are sent to 
 
 - Get signed URL: `https://39r1iqoj3f.execute-api.eu-central-1.amazonaws.com/prod/import?name=products.csv`
 
+> **Authorization required:** `GET /import` requires `Authorization: Basic <token>` header. See [Authorization Service](#authorization-service).
+
 **Frontend:** https://d2xbbmgdpkl47j.cloudfront.net/admin/products
 
 ### CSV format
@@ -191,3 +194,49 @@ npm test
 
 OpenAPI spec: `import-service/openapi.json` — can be rendered at [editor.swagger.io](https://editor.swagger.io)
 
+---
+
+## Authorization Service
+
+Lambda authorizer for API Gateway. Validates Basic Auth credentials against environment variables.
+
+### Lambda — basicAuthorizer
+
+TOKEN-type Lambda authorizer attached to `GET /import` in Import Service.
+
+**Behavior:**
+- No `Authorization` header → `401 Unauthorized`
+- Invalid credentials → `403 Forbidden` (Deny policy)
+- Valid credentials → IAM Allow policy
+
+**Credentials** are stored in `.env` (not committed to git):
+```
+GITHUB_LOGIN=<your_github_login>
+TEST_PASSWORD=<password>
+```
+
+The lambda environment variable name is the GitHub login, value is the password.
+
+### How to generate a token
+
+```bash
+echo -n '<github_login>:<password>' | base64
+```
+
+### Deploy
+
+```bash
+cd authorization-service
+npm install
+cdk bootstrap   # first time only
+npm run deploy
+```
+
+> **Note:** Authorization Service must be deployed before Import Service, as Import Service imports the `BasicAuthorizerArn` CloudFormation export.
+
+### Run tests
+
+```bash
+cd authorization-service
+npm test
+```
