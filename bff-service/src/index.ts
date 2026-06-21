@@ -44,7 +44,7 @@ app.all('*', async (req: Request, res: Response) => {
   const isProductListRequest =
     req.method === 'GET' &&
     serviceName.toUpperCase() === 'PRODUCT' &&
-    restSegments.length === 0;
+    (restSegments.length === 0 || restSegments.join('/') === 'products');
 
   if (isProductListRequest) {
     const cached = cache.get(targetURL);
