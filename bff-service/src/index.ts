@@ -18,7 +18,7 @@ const cache = new Map<string, CacheEntry>();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.all('/{*splat}', async (req: Request, res: Response) => {
+app.all('*', async (req: Request, res: Response) => {
   // Extract service name from the first path segment: /{serviceName}/rest/of/path
   const [, serviceName, ...restSegments] = req.path.split('/');
 
