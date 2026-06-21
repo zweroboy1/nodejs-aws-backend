@@ -1,0 +1,19 @@
+# node_modules — installed by npm inside the container
+node_modules
+
+# dist — compiled output is generated inside the container
+dist
+
+# .git — version control history is irrelevant at runtime
+.git
+
+# environment files — secrets must be injected at runtime, never baked into the image
+.env
+*.env
+
+# OS artefacts
+.DS_Store
+
+# IDE configs
+.vscode
+.idea
