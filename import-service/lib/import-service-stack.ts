@@ -53,6 +53,25 @@ export class ImportServiceStack extends cdk.Stack {
             { prefix: 'uploaded/' }
         );
 
+        const basicAuthorizerArn = cdk.Fn.importValue('BasicAuthorizerArn');
+        const basicAuthorizerFn = lambda.Function.fromFunctionArn(
+            this,
+            'BasicAuthorizerFn',
+            basicAuthorizerArn,
+        );
+
+        const authorizer = new apigateway.TokenAuthorizer(this, 'BasicAuthorizer', {
+            handler: basicAuthorizerFn,
+            identitySource: apigateway.IdentitySource.header('Authorization'),
+        });
+
+        new lambda.CfnPermission(this, 'BasicAuthorizerPermission', {
+            action: 'lambda:InvokeFunction',
+            functionName: basicAuthorizerFn.functionArn,
+            principal: 'apigateway.amazonaws.com',
+            sourceAccount: this.account,
+        });
+
         const api = new apigateway.RestApi(this, 'ImportServiceApi', {
             restApiName: 'Import Service',
             defaultCorsPreflightOptions: {
@@ -61,8 +80,24 @@ export class ImportServiceStack extends cdk.Stack {
             },
         });
 
+        api.addGatewayResponse('Unauthorized', {
+            type: apigateway.ResponseType.UNAUTHORIZED,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': "'*'",
+            },
+        });
+
+        api.addGatewayResponse('AccessDenied', {
+            type: apigateway.ResponseType.ACCESS_DENIED,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': "'*'",
+            },
+        });
+
         const importResource = api.root.addResource('import');
         importResource.addMethod('GET', new apigateway.LambdaIntegration(importProductsFile), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.CUSTOM,
             requestParameters: {
                 'method.request.querystring.name': true,
             },
