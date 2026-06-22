@@ -61,9 +61,11 @@ const server = http.createServer(async (req: IncomingMessage, res: ServerRespons
   try {
     const body = ['GET', 'HEAD'].includes(req.method ?? '') ? undefined : await readBody(req);
 
+    const HOP_BY_HOP = new Set(['host', 'connection', 'keep-alive', 'transfer-encoding', 'te', 'trailers', 'upgrade', 'proxy-authorization', 'proxy-authenticate']);
+
     const forwardHeaders: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.headers)) {
-      if (key.toLowerCase() !== 'host' && value !== undefined) {
+      if (!HOP_BY_HOP.has(key.toLowerCase()) && value !== undefined) {
         forwardHeaders[key] = Array.isArray(value) ? value.join(', ') : String(value);
       }
     }
