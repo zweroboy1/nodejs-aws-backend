@@ -88,7 +88,8 @@ const server = http.createServer(async (req: IncomingMessage, res: ServerRespons
 
     res.writeHead(response.status, { 'Content-Type': contentType });
     res.end(responseText);
-  } catch {
+  } catch (err) {
+    console.error('BFF proxy error:', err);
     res.writeHead(502, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Cannot process request' }));
   }
